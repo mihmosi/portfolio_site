@@ -1,33 +1,35 @@
 // const { src, dest } = require('gulp');
 
-let projectFolder = "dist";
+let projectFolder = require("path").basename(__dirname);
 let sourceFolder = "#src";
+
+let fs = require('fs');
 
 let path = {
   bild: {
-    html: projectFolder+"/",
-    css: projectFolder+"/css/",
-    js: projectFolder+"/js/",
-    img: projectFolder+"/img/",
-    fonts: projectFolder+"/fonts/",
+    html: projectFolder + "/",
+    css: projectFolder + "/css/",
+    js: projectFolder + "/js/",
+    img: projectFolder + "/img/",
+    fonts: projectFolder + "/fonts/",
   },
   src: {
-    html: [sourceFolder+"/*.html", "!"+sourceFolder+"/_*.html"],
-    css: sourceFolder+"/scss/style.scss",
-    js: sourceFolder+"/js/script.js",
-    img: sourceFolder+"/img/**/*.{jpg,png,svg,gif,ico,webp}",
-    fonts: sourceFolder+ "/fonts/*.ttf",
+    html: [sourceFolder + "/*.html", "!" + sourceFolder + "/_*.html"],
+    css: sourceFolder + "/scss/style.scss",
+    js: sourceFolder + "/js/script.js",
+    img: sourceFolder + "/img/**/*.{jpg,png,svg,gif,ico,webp}",
+    fonts: sourceFolder + "/fonts/*.ttf",
   },
   watch: {
-    html: sourceFolder+"/**/*.html",
-    css: sourceFolder+"/scss/**/*.scss",
-    js: sourceFolder+"/js/**/*.js",
-    img: sourceFolder+"/img/**/*.{jpg,png,svg,gif,ico,webp}",
+    html: sourceFolder + "/**/*.html",
+    css: sourceFolder + "/scss/**/*.scss",
+    js: sourceFolder + "/js/**/*.js",
+    img: sourceFolder + "/img/**/*.{jpg,png,svg,gif,ico,webp}",
   },
   clean: "./" + projectFolder + "/"
 }
 
-let { src , dest } = require('gulp'),
+let { src, dest } = require('gulp'),
   gulp = require('gulp'),
   browsersync = require('browser-sync').create(),
   fileinclude = require('gulp-file-include'),
@@ -47,13 +49,13 @@ let { src , dest } = require('gulp'),
   ttf2woff2 = require('gulp-ttf2woff2'),
   fonter = require('gulp-fonter');
 
-  
+
 function browserSync(params) {
   browsersync.init({
-    server:{
+    server: {
       baseDir: "./" + projectFolder + "/"
     },
-    port:3000,
+    port: 3000,
     notify: false
   })
 }
@@ -83,7 +85,7 @@ function css() {
       })
     )
     .pipe(webpcss({}))
-    .pipe(dest(path.bild.css)) 
+    .pipe(dest(path.bild.css))
     .pipe(clean_css())
     .pipe(
       rename({
@@ -113,16 +115,16 @@ function js() {
 function images() {
   return src(path.src.img)
     .pipe(
-       webp({
+      webp({
         quality: 70
-       })
+      })
     )
     .pipe(dest(path.bild.img))
     .pipe(src(path.src.img))
     .pipe(
       imagemin({
         processive: true,
-        svgoPlagins: [{removeViewBox: false}],
+        svgoPlagins: [{ removeViewBox: false }],
         interlaced: true,
         optimizationLevel: 3 //0 to 7
       })
@@ -131,7 +133,7 @@ function images() {
     .pipe(browsersync.stream())
 }
 
-function fonts (params) {
+function fonts(params) {
   src(path.src.fonts)
     .pipe(ttf2woff())
     .pipe(dest(path.bild.fonts))
@@ -154,7 +156,7 @@ gulp.task('svgSprite', function () {
       mode: {
         stack: {
           sprite: "../icons/icons.svg", //sprite file name
-         // example: true 
+          // example: true 
         }
       },
     }
@@ -162,20 +164,42 @@ gulp.task('svgSprite', function () {
     .pipe(dest(path.bild.img))
 })
 
+
+function fontsStyle(params) {
+  let file_content = fs.readFileSync(sourceFolder + '/scss/fonts.scss'); if (file_content == '') {
+    fs.writeFile(sourceFolder + '/scss/fonts.scss', '', cb); 
+    return fs.readdir(path.bild.fonts, function (err, items) {
+      if (items) { 
+        let c_fontname; 
+         for (var i = 0; i < items.length; i++) { 
+          let fontname = items[i].split('.'); fontname = fontname[0]; 
+          if (c_fontname != fontname) { 
+            fs.appendFile(sourceFolder + '/scss/fonts.scss', '@include font("' + fontname + '", "' + fontname + '", "400", "normal");\r\n', cb);
+          } c_fontname = fontname; 
+        } 
+      } 
+    }) 
+  }
+}
+
+
+function cb() { }
+
 function watchFiles(params) {
-  gulp.watch([path.watch.html],  html);
-  gulp.watch([path.watch.css],  css);
-  gulp.watch([path.watch.js],  js);  
-  gulp.watch([path.watch.img],  images); 
+  gulp.watch([path.watch.html], html);
+  gulp.watch([path.watch.css], css);
+  gulp.watch([path.watch.js], js);
+  gulp.watch([path.watch.img], images);
 }
 
 function clean(params) {
   return del(path.clean)
 }
 
-let bild = gulp.series(clean, gulp.parallel(js, css, html, images, fonts));
+let bild = gulp.series(clean, gulp.parallel(js, css, html, images, fonts), fontsStyle);
 let watch = gulp.parallel(bild, watchFiles, browserSync);
 
+exports.fontsStyle = fontsStyle;
 exports.fonts = fonts;
 exports.images = images;
 exports.js = js;
@@ -184,4 +208,3 @@ exports.html = html;
 exports.bild = bild;
 exports.watch = watch;
 exports.default = watch;
-  

@@ -40,8 +40,13 @@ let { src , dest } = require('gulp'),
   uglify = require('gulp-uglify-es').default,
   imagemin = require('gulp-imagemin'),
   webp = require('gulp-webp'),
-  webphtml = require('gulp-webp-html');
-  // webpcss = require("gulp-webpcss");
+  webphtml = require('gulp-webp-html'),
+  webpcss = require("gulp-webpcss"),
+  svgsprite = require("gulp-svg-sprite"),
+  ttf2woff = require('gulp-ttf2woff'),
+  ttf2woff2 = require('gulp-ttf2woff2'),
+  fonter = require('gulp-fonter');
+
   
 function browserSync(params) {
   browsersync.init({
@@ -77,8 +82,8 @@ function css() {
         cascade: true
       })
     )
-    // .pipe(webpcss())
-    .pipe(dest(path.bild.css))
+    .pipe(webpcss({}))
+    .pipe(dest(path.bild.css)) 
     .pipe(clean_css())
     .pipe(
       rename({
@@ -126,6 +131,37 @@ function images() {
     .pipe(browsersync.stream())
 }
 
+function fonts (params) {
+  src(path.src.fonts)
+    .pipe(ttf2woff())
+    .pipe(dest(path.bild.fonts))
+  return src(path.src.fonts)
+    .pipe(ttf2woff2())
+    .pipe(dest(path.bild.fonts))
+}
+
+gulp.task('otf2ttf', function () {
+  return src([sourceFolder + '/fonts/*.otf'])
+    .pipe(fonter({
+      formats: ['ttf']
+    }))
+    .pipe(dest(path.src.fonts));
+})
+
+gulp.task('svgSprite', function () {
+  return gulp.src([sourceFolder + '/iconsprite/*.svg'])
+    .pipe(svgsprite({
+      mode: {
+        stack: {
+          sprite: "../icons/icons.svg", //sprite file name
+         // example: true 
+        }
+      },
+    }
+    ))
+    .pipe(dest(path.bild.img))
+})
+
 function watchFiles(params) {
   gulp.watch([path.watch.html],  html);
   gulp.watch([path.watch.css],  css);
@@ -137,9 +173,10 @@ function clean(params) {
   return del(path.clean)
 }
 
-let bild = gulp.series(clean, gulp.parallel(js, css, html, images));
+let bild = gulp.series(clean, gulp.parallel(js, css, html, images, fonts));
 let watch = gulp.parallel(bild, watchFiles, browserSync);
 
+exports.fonts = fonts;
 exports.images = images;
 exports.js = js;
 exports.css = css;

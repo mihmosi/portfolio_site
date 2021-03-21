@@ -2,6 +2,9 @@ body {
   font-size: 15px;
   display: flex;
 }
+div {
+  background: url("../img/Konfetty.jpg") 0 0 no-repeat;
+}
 span {
   font-size: 20px;
   @media (max-width: 767px) {
